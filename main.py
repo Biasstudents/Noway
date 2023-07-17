@@ -9,8 +9,10 @@ def send_request(url):
         start_time = time()
         response = scraper.head(url)
         response_time = time() - start_time
+        print(f"Request sent successfully: {response.status_code}")
         return (True, response_time)
     except Exception as e:
+        print(f"Error sending request: {e}")
         return (False, None)
 
 def check_website_status(url):
