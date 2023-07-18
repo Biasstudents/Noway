@@ -1,21 +1,50 @@
-import aiohttp
-import asyncio
+import cloudscraper
+import threading
+import time
+from termcolor import colored
 
-# Set the number of tasks to use
-num_tasks = 1000
+# Set the number of threads to use
+num_threads = int(input("Enter the number of threads to use: "))
 
 # Set the URL of the website to test
-url = "https://tls.mrrage.xyz/nginx_status"
+url = input("Enter the website URL (including http or https): ")
 
-async def stress_test():
-    async with aiohttp.ClientSession() as session:
-        tasks = [send_request(session) for _ in range(num_tasks)]
-        await asyncio.gather(*tasks)
+# Set the duration of the stress test in seconds
+duration = int(input("Enter the duration of the stress test in seconds: "))
 
-async def send_request(session):
-    while True:
-        async with session.get(url) as response:
-            print(f"Status code: {response.status}")
+# Set the interval for checking the website status in seconds
+status_interval = 10
 
-# Run the stress test
-asyncio.run(stress_test())
+def stress_test():
+    scraper = cloudscraper.create_scraper()
+    start_time = time.time()
+    print(colored(f"Stress test started on {url} successfully!", "blue"))
+    while time.time() - start_time < duration:
+        send_request(scraper)
+        time.sleep(status_interval)
+        check_status(scraper)
+    print(colored("Stress test ended.", "blue"))
+
+def send_request(scraper):
+    response = scraper.get(url)
+
+def check_status(scraper):
+    try:
+        response = scraper.get(url)
+        if response.status_code == 200:
+            print(colored(f"{url} is online", "green"))
+        else:
+            print(colored(f"{url} is offline", "red"))
+    except:
+        print(colored(f"{url} is offline", "red"))
+
+# Create and start the threads
+threads = []
+for i in range(num_threads):
+    thread = threading.Thread(target=stress_test)
+    thread.start()
+    threads.append(thread)
+
+# Wait for all threads to finish
+for thread in threads:
+    thread.join()
