@@ -46,7 +46,7 @@ def send_request(client):
     try:
         response = client.get(url)
     except Exception as e:
-        print(f"Error sending request: {e}")
+        pass # Suppress error messages
 
 def check_status(client):
     try:
