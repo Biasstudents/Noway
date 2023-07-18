@@ -31,7 +31,13 @@ if protocol == "udp":
 elif protocol == "tcp":
     packet_size = 65535 # Maximum size for a TCP packet
 
+# Initialize packet counter and lock
+packet_counter = 0
+packet_counter_lock = threading.Lock()
+
 def stress_test(thread_id):
+    global packet_counter
+
     if protocol == "cfb":
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
@@ -55,6 +61,11 @@ def stress_test(thread_id):
             send_request(client)
         elif protocol in ["tcp", "udp"]:
             send_packet(sock)
+            with packet_counter_lock:
+                packet_counter += 1
+        if thread_id == 0 and int(time.time() - start_time) % 10 == 0:
+            with packet_counter_lock:
+                print(f"Sent {packet_counter} packets to {ip}:{port}")
     if thread_id == 0:
         print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
 
