@@ -1,7 +1,10 @@
 import cloudscraper
 import threading
 import time
-from termcolor import colored
+from colorama import Fore, Style, init
+
+# Initialize colorama
+init()
 
 # Set the URL of the website to test
 url = input("Enter the website URL (including http or https): ")
@@ -15,15 +18,18 @@ duration = int(input("Enter the duration of the stress test in seconds: "))
 # Set the interval for checking the website status in seconds
 status_interval = 10
 
-def stress_test():
+def stress_test(thread_id):
     scraper = cloudscraper.create_scraper()
     start_time = time.time()
-    print(colored(f"Stressing started on {url} successfully!", "yellow"))
+    if thread_id == 0:
+        print(Fore.YELLOW + f"Stressing started on {url} successfully!" + Style.RESET_ALL)
     while time.time() - start_time < duration:
         send_request(scraper)
-        time.sleep(status_interval)
-        check_status(scraper)
-    print(colored("Stress test ended.", "yellow"))
+        if thread_id == 0:
+            time.sleep(status_interval)
+            check_status(scraper)
+    if thread_id == 0:
+        print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
 
 def send_request(scraper):
     response = scraper.get(url)
@@ -35,16 +41,16 @@ def check_status(scraper):
         end_time = time.time()
         response_time = end_time - start_time
         if response.status_code == 200:
-            print(colored(f"{url} is online (response time: {response_time:.2f} seconds)", "green"))
+            print(Fore.GREEN + f"{url} is online (response time: {response_time:.2f} seconds)" + Style.RESET_ALL)
         else:
-            print(colored(f"{url} is offline", "red"))
+            print(Fore.RED + f"{url} is offline" + Style.RESET_ALL)
     except:
-        print(colored(f"{url} is offline", "red"))
+        print(Fore.RED + f"{url} is offline" + Style.RESET_ALL)
 
 # Create and start the threads
 threads = []
 for i in range(num_threads):
-    thread = threading.Thread(target=stress_test)
+    thread = threading.Thread(target=stress_test, args=(i,))
     thread.start()
     threads.append(thread)
 
