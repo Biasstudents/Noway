@@ -32,7 +32,11 @@ def stress_test(thread_id):
         print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
 
 def send_request(scraper):
-    response = scraper.get(url)
+    try:
+        response = scraper.get(url)
+    except Exception as e:
+        print(f"Error sending request: {e}")
+
 
 def check_status(scraper):
     try:
