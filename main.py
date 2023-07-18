@@ -25,6 +25,12 @@ num_threads = int(input("Enter the number of threads to use: "))
 # Set the duration of the stress test in seconds
 duration = int(input("Enter the duration of the stress test in seconds: "))
 
+# Set the packet size (in bytes)
+if protocol == "udp":
+    packet_size = 65507 # Maximum size for a UDP packet
+elif protocol == "tcp":
+    packet_size = 65535 # Maximum size for a TCP packet
+
 def stress_test(thread_id):
     if protocol == "cfb":
         client = cloudscraper.create_scraper()
@@ -65,10 +71,10 @@ def send_packet(sock):
     try:
         if protocol == "tcp":
             sock.connect((ip, port))
-            sock.send(b"Stress test packet")
+            sock.send(b"X" * packet_size) # Send a packet with maximum size
             sock.close()
         elif protocol == "udp":
-            sock.sendto(b"Stress test packet", (ip, port))
+            sock.sendto(b"X" * packet_size, (ip, port)) # Send a packet with maximum size
     except Exception as e:
         pass # Suppress error messages
 
