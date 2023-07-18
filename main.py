@@ -51,6 +51,7 @@ def stress_test(thread_id):
         return
 
     start_time = time.time()
+    last_print_time = start_time
     if thread_id == 0:
         if protocol in ["get", "head", "cfb"]:
             print(Fore.YELLOW + f"Stressing started on {url} successfully!" + Style.RESET_ALL)
@@ -63,9 +64,10 @@ def stress_test(thread_id):
             send_packet(sock)
             with packet_counter_lock:
                 packet_counter += 1
-        if thread_id == 0 and int(time.time() - start_time) % 10 == 0:
+        if thread_id == 0 and time.time() - last_print_time >= 10:
             with packet_counter_lock:
                 print(f"Sent {packet_counter} packets to {ip}:{port}")
+                last_print_time = time.time()
     if thread_id == 0:
         print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
 
