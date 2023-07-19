@@ -1,29 +1,24 @@
 import socket
-import threading
-import time
 
-SERVER_IP = input("Enter the server IP: ")
-SERVER_PORT = int(input("Enter the server port: "))
+# Set the server IP address and port number
+server_ip = 'YOUR_SERVER_IP'
+server_port = 25565
 
-def connect_to_server():
-    while True:
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.connect((SERVER_IP, SERVER_PORT))
-            print("Connected to server")
-        except:
-            print("Failed to connect to server")
+# Create a TCP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-NUM_THREADS = int(input("Enter the number of threads: "))
-DURATION = int(input("Enter the duration (in seconds): "))
+# Connect to the server
+sock.connect((server_ip, server_port))
 
-threads = []
-for i in range(NUM_THREADS):
-    thread = threading.Thread(target=connect_to_server)
-    thread.start()
-    threads.append(thread)
+# Send data to the server (replace with your own data)
+data = b'Hello, server!'
+sock.sendall(data)
 
-time.sleep(DURATION)
+# Receive data from the server
+response = sock.recv(1024)
 
-for thread in threads:
-    thread.join()
+# Close the connection
+sock.close()
+
+# Print the response from the server
+print('Received:', response)
