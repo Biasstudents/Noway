@@ -1,8 +1,8 @@
 import socket
 
 # Set the server IP address and port number
-server_ip = 'YOUR_SERVER_IP'
-server_port = 25565
+server_ip = '185.107.194.87'
+server_port = 60184
 
 # Create a TCP socket
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
