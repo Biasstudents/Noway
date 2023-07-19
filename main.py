@@ -11,7 +11,7 @@ init()
 # Set the protocol/method to use for sending requests
 print("Layer 7: get, head, cfb")
 print("Layer 4: tcp, udp")
-protocol = input("Enter the method to use: ")
+protocol = input("Enter the protocol/method to use: ")
 
 if protocol in ["get", "head", "cfb"]:
     # Set the URL of the website to test
@@ -74,9 +74,9 @@ def stress_test(thread_id):
                         response = httpx.get(url)
                         response_end_time = time.time()
                         response_time = round((response_end_time - response_start_time) * 1000, 2)
-                        print(Fore.GREEN + f"Website is up. Response time: {response_time} ms. Sent {packet_counter} requests to {url}" + Style.RESET_ALL)
+                        print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
                     except Exception as e:
-                        print(Fore.RED + f"Website is down. Sent {packet_counter} requests to {url}" + Style.RESET_ALL)
+                        print(Fore.RED + f"Website is down." + Style.RESET_ALL)
                 elif protocol in ["tcp", "udp"]:
                     print(f"Sent {packet_counter} packets to {ip}:{port}")
                 last_print_time = time.time()
@@ -113,3 +113,6 @@ for i in range(num_threads):
 # Wait for all threads to finish
 for thread in threads:
     thread.join()
+
+# Exit immediately after stress test has ended
+exit(0)
