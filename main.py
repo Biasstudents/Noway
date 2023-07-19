@@ -9,10 +9,9 @@ from colorama import Fore, Style, init
 init()
 
 # Set the protocol/method to use for sending requests
-print("Enter the protocol/method to use:")
 print("Layer 7: get, head, cfb")
 print("Layer 4: tcp, udp")
-protocol = input()
+protocol = input("Enter the method to use: ")
 
 if protocol in ["get", "head", "cfb"]:
     # Set the URL of the website to test
