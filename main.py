@@ -74,9 +74,6 @@ def stress_test(thread_id):
                 elif protocol in ["tcp", "udp"]:
                     print(f"Sent {packet_counter} packets to {ip}:{port}")
                 last_print_time = time.time()
-    if thread_id == 0:
-        time.sleep(0.5) # Add a 0.5 second delay
-        print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
 
 def send_request(client):
     try:
@@ -106,3 +103,5 @@ for i in range(num_threads):
 
 for thread in threads:
     thread.join()
+
+print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
