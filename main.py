@@ -5,6 +5,7 @@ import threading
 import time
 import requests
 import sys
+import os
 from colorama import Fore, Style, init
 
 init()
@@ -29,16 +30,6 @@ def ask_for_proxies():
     while use_proxies not in ["y", "n"]:
         use_proxies = input("Do you want to use proxies? (y/n): ").lower()
 
-ask_for_proxies()
-
-if use_proxies == "y":
-    proxy_list = []
-    with open("proxies.txt", "r") as proxy_file:
-        proxy_list = list(set(line.strip() for line in proxy_file if line.strip()))
-    print(f"{len(proxy_list)} proxies loaded.")
-else:
-    proxy_list = []
-
 def download_proxies():
     global proxy_list
     print("Downloading public proxies...")
@@ -47,6 +38,7 @@ def download_proxies():
         "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks5/socks5.txt"
     ]
 
+    proxy_list = []
     for url in urls:
         try:
             response = requests.get(url, timeout=10)
@@ -94,12 +86,19 @@ def check_proxies():
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(proxy_list))
 
+if use_proxies is None:
+    ask_for_proxies()
+
 if use_proxies == "y":
     if "-check" in sys.argv:
         check_proxies()
+    elif "-download" in sys.argv:
+        download_proxies()
 else:
     if "-download" in sys.argv:
-        download_proxies()
+        print("Proxies won't be downloaded as you selected not to use proxies.")
+    elif "-check" in sys.argv:
+        print("Proxy check won't be performed as you selected not to use proxies.")
 
 packet_size = 65507 if protocol == "udp" else 65535
 
