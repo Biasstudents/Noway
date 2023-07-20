@@ -5,6 +5,7 @@ import threading
 import time
 import requests
 import argparse
+import sys
 from colorama import Fore, Style, init
 
 init()
@@ -55,6 +56,10 @@ def download_proxies():
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(proxy_list))
 
+if args.download:
+    download_proxies()
+    sys.exit()
+
 def check_proxy(proxy):
     try:
         proxy_address = proxy.split(":")[0]
@@ -88,10 +93,6 @@ def check_proxies():
     proxy_list = checked_proxies
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(proxy_list))
-
-if args.download:
-    download_proxies()
-    sys.exit()
 
 if args.check:
     check_proxies()
