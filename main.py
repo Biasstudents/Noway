@@ -9,7 +9,7 @@ init()
 
 print("Layer 7: get, head, cfb")
 print("Layer 4: tcp, udp")
-protocol = input("Enter the method to use: ")
+protocol = input("Enter the method to use:")
 
 if protocol in ["get", "head", "cfb"]:
     
