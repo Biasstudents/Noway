@@ -12,23 +12,24 @@ from colorama import Fore, Style, init
 init()
 
 def download_proxies():
-    print("Downloading public proxies...")
+    print("Downloading proxies...")
     urls = [
         "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt",
-        "https://raw.githubusercontent.com/officialputuid/KangProxy/KangProxy/socks5/socks5.txt"
+        "https://api.proxyscrape.com/?request=getproxies&proxytype=socks5&timeout=10000&country=all",
+        "https://raw.githubusercontent.com/hookzof/socks5_list/master/proxy.txt"
     ]
 
-    proxy_list = []
+    proxy_set = set()
     for url in urls:
         try:
             response = requests.get(url, timeout=10)
             if response.status_code == 200:
                 proxies = response.text.strip().split("\n")
-                proxy_list.extend(proxies)
+                proxy_set.update(proxies)
         except Exception as e:
             print(f"Failed to download proxies from {url}: {e}")
 
-    proxy_list = list(set(proxy_list))
+    proxy_list = list(proxy_set)
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(proxy_list))
 
