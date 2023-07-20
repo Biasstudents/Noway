@@ -69,9 +69,20 @@ def check_proxies():
 
 parser = argparse.ArgumentParser(description="Stress testing tool.")
 parser.add_argument("-method", choices=["get", "head", "cfb", "tcp", "udp"], help="Choose the method to use.")
-args = parser.parse_args()
+args, unknown_args = parser.parse_known_args()
+
+if unknown_args and "-download" in unknown_args:
+    download_proxies()
+    sys.exit()
+
+if unknown_args and "-check" in unknown_args:
+    check_proxies()
+    sys.exit()
 
 method = args.method
+
+if not method:
+    method = input("Choose the method to use (get, head, cfb, tcp, udp): ")
 
 if method in ["get", "head", "cfb"]:
     url = input("Enter the website URL (including http or https): ")
@@ -89,15 +100,7 @@ def ask_for_proxies():
     while use_proxies not in ["y", "n"]:
         use_proxies = input("Do you want to use proxies? (y/n): ").lower()
 
-if "-download" in sys.argv:
-    download_proxies()
-    sys.exit()
-
-if "-check" in sys.argv:
-    check_proxies()
-    sys.exit()
-
-if use_proxies is None:
+if not method:
     ask_for_proxies()
 
 packet_size = 65507 if method == "udp" else 65535
