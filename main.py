@@ -148,7 +148,7 @@ def stress_test(thread_id):
                 proxy_list = proxy_file.read().strip().split("\n")
 
             proxy_address = proxy_list[thread_id % len(proxy_list)]
-            proxy = {"http": f"http://{proxy_address}", "https": f"https://{proxy_address}"}
+            proxy = {"http://": f"http://{proxy_address}", "https://": f"https://{proxy_address}"}
             client = httpx.Client(proxies=proxy)
         else:
             client = httpx.Client()
@@ -226,3 +226,6 @@ for thread in threads:
     thread.join()
 
 print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
+
+if __name__ == "__main__":
+    pass
