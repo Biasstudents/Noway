@@ -6,36 +6,12 @@ import time
 import requests
 import argparse
 import sys
+import os
 from colorama import Fore, Style, init
 
 init()
 
-parser = argparse.ArgumentParser(description="Stress testing tool.")
-parser.add_argument("-method", choices=["get", "head", "cfb", "tcp", "udp"], help="Choose the method to use.")
-parser.add_argument("-download", action="store_true", help="Download public proxies.")
-parser.add_argument("-check", action="store_true", help="Check the proxies.")
-args = parser.parse_args()
-
-method = args.method
-
-if method in ["get", "head", "cfb"]:
-    url = input("Enter the website URL (including http or https): ")
-elif method in ["tcp", "udp"]:
-    ip = input("Enter the IP address of the server: ")
-    port = int(input("Enter the port number: "))
-
-num_threads = int(input("Enter the number of threads to use: "))
-duration = int(input("Enter the duration of the stress test in seconds: "))
-
-use_proxies = None
-
-def ask_for_proxies():
-    global use_proxies
-    while use_proxies not in ["y", "n"]:
-        use_proxies = input("Do you want to use proxies? (y/n): ").lower()
-
 def download_proxies():
-    global proxy_list
     print("Downloading public proxies...")
     urls = [
         "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt",
@@ -56,10 +32,6 @@ def download_proxies():
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(proxy_list))
 
-if args.download:
-    download_proxies()
-    sys.exit()
-
 def check_proxy(proxy):
     try:
         proxy_address = proxy.split(":")[0]
@@ -77,7 +49,9 @@ def check_proxy(proxy):
         return False
 
 def check_proxies():
-    global proxy_list
+    with open("proxies.txt") as proxy_file:
+        proxy_list = proxy_file.read().strip().split("\n")
+
     print("Checking proxies...")
     checked_proxies = []
     proxy_count = len(proxy_list)
@@ -90,11 +64,36 @@ def check_proxies():
             checked_proxies.append(proxy)
 
     print("\nProxy checking done.")
-    proxy_list = checked_proxies
     with open("proxies.txt", "w") as proxy_file:
-        proxy_file.write("\n".join(proxy_list))
+        proxy_file.write("\n".join(checked_proxies))
 
-if args.check:
+parser = argparse.ArgumentParser(description="Stress testing tool.")
+parser.add_argument("-method", choices=["get", "head", "cfb", "tcp", "udp"], help="Choose the method to use.")
+args = parser.parse_args()
+
+method = args.method
+
+if method in ["get", "head", "cfb"]:
+    url = input("Enter the website URL (including http or https): ")
+elif method in ["tcp", "udp"]:
+    ip = input("Enter the IP address of the server: ")
+    port = int(input("Enter the port number: "))
+
+num_threads = int(input("Enter the number of threads to use: "))
+duration = int(input("Enter the duration of the stress test in seconds: "))
+
+use_proxies = None
+
+def ask_for_proxies():
+    global use_proxies
+    while use_proxies not in ["y", "n"]:
+        use_proxies = input("Do you want to use proxies? (y/n): ").lower()
+
+if "-download" in sys.argv:
+    download_proxies()
+    sys.exit()
+
+if "-check" in sys.argv:
     check_proxies()
     sys.exit()
 
@@ -113,6 +112,9 @@ def stress_test(thread_id):
         client = cloudscraper.create_scraper()
     else:
         if use_proxies == "y":
+            with open("proxies.txt") as proxy_file:
+                proxy_list = proxy_file.read().strip().split("\n")
+
             proxy_address = proxy_list[thread_id % len(proxy_list)]
             proxy = {"http": f"http://{proxy_address}", "https": f"https://{proxy_address}"}
             client = httpx.Client(proxies=proxy)
