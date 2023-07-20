@@ -88,11 +88,14 @@ def check_proxies():
 
 if "-download" in sys.argv:
     download_proxies()
-elif "-check" in sys.argv:
+    sys.exit()
+
+if "-check" in sys.argv:
     check_proxies()
-else:
-    if use_proxies is None:
-        ask_for_proxies()
+    sys.exit()
+
+if use_proxies is None:
+    ask_for_proxies()
 
 packet_size = 65507 if protocol == "udp" else 65535
 
