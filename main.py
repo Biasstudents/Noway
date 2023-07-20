@@ -86,19 +86,13 @@ def check_proxies():
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(proxy_list))
 
-if use_proxies is None:
-    ask_for_proxies()
-
-if use_proxies == "y":
-    if "-check" in sys.argv:
-        check_proxies()
-    elif "-download" in sys.argv:
-        download_proxies()
+if "-download" in sys.argv:
+    download_proxies()
+elif "-check" in sys.argv:
+    check_proxies()
 else:
-    if "-download" in sys.argv:
-        print("Proxies won't be downloaded as you selected not to use proxies.")
-    elif "-check" in sys.argv:
-        print("Proxy check won't be performed as you selected not to use proxies.")
+    if use_proxies is None:
+        ask_for_proxies()
 
 packet_size = 65507 if protocol == "udp" else 65535
 
