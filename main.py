@@ -32,6 +32,8 @@ def download_proxies():
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(proxy_list))
 
+    print(Fore.GREEN + f"Downloaded {len(proxy_list)} proxies." + Style.RESET_ALL)
+
 def check_proxy(proxy):
     try:
         proxy_address = proxy.split(":")[0]
@@ -56,12 +58,28 @@ def check_proxies():
     checked_proxies = []
     proxy_count = len(proxy_list)
 
-    for i, proxy in enumerate(proxy_list):
-        sys.stdout.write(f"\rProxy checking progress: {i + 1}/{proxy_count}")
-        sys.stdout.flush()
+    def check_proxy_thread(start, end):
+        nonlocal checked_proxies
 
-        if check_proxy(proxy):
-            checked_proxies.append(proxy)
+        for i in range(start, end):
+            proxy = proxy_list[i]
+            if check_proxy(proxy):
+                checked_proxies.append(proxy)
+
+    num_threads = 64
+    chunk_size = proxy_count // num_threads
+
+    threads = []
+    for i in range(num_threads):
+        start = i * chunk_size
+        end = start + chunk_size if i < num_threads - 1 else proxy_count
+
+        thread = threading.Thread(target=check_proxy_thread, args=(start, end))
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
 
     print("\nProxy checking done.")
     with open("proxies.txt", "w") as proxy_file:
