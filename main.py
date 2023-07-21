@@ -1,4 +1,4 @@
-import httpx
+import aiohttp
 import asyncio
 import time
 import argparse
@@ -34,7 +34,7 @@ packet_counter = 0
 async def stress_test(thread_id, packet_counter_lock):
     global packet_counter
 
-    async with httpx.AsyncClient() as client:
+    async with aiohttp.ClientSession() as session:
         start_time = time.time()
         last_print_time = start_time - 9
         if thread_id == 0:
@@ -45,7 +45,7 @@ async def stress_test(thread_id, packet_counter_lock):
 
         while time.time() - start_time < duration:
             if method in ["get", "head", "tcp", "udp"]:
-                await send_packet(client)
+                await send_packet(session)
                 async with packet_counter_lock:
                     packet_counter += 1
             if thread_id == 0 and time.time() - last_print_time >= 10:
@@ -53,7 +53,7 @@ async def stress_test(thread_id, packet_counter_lock):
                     if method in ["get", "head"]:
                         try:
                             response_start_time = time.time()
-                            response = await client.get(url) if method == "get" else await client.head(url)
+                            response = await session.get(url) if method == "get" else await session.head(url)
                             response_end_time = time.time()
                             response_time = round((response_end_time - response_start_time) * 1000, 2)
                             print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
@@ -63,12 +63,12 @@ async def stress_test(thread_id, packet_counter_lock):
                         print(f"Sent {packet_counter} packets to {ip}:{port}")
                     last_print_time = time.time()
 
-async def send_packet(client):
+async def send_packet(session):
     try:
         if method == "tcp":
-            response = await client.get(f"http://{ip}:{port}")
+            response = await session.get(f"http://{ip}:{port}")
         elif method == "udp":
-            response = await client.get(f"udp://{ip}:{port}")
+            response = await session.get(f"udp://{ip}:{port}")
     except Exception as e:
         pass
 
