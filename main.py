@@ -102,36 +102,40 @@ def check_proxies_advanced():
     proxy_count = len(proxy_list)
     checked_count = 0
 
-    def check_proxy_thread(start, end):
-        nonlocal checked_proxies, checked_count
+ def check_proxy_thread(start, end):
+    nonlocal checked_proxies, checked_count
 
-        for i in range(start, end):
-            proxy = proxy_list[i]
-            if check_proxy(proxy):
-                # Perform additional checks on the proxy
-                success_count = 0
-                total_time = 0
-                test_count = 10
-                for j in range(test_count):
-                    try:
-                        start_time = time.time()
-                        response = requests.get(url, proxies={"http": f"http://{proxy}", "https": f"https://{proxy}"}, timeout=5)
-                        end_time = time.time()
-                        total_time += end_time - start_time
-                        success_count += 1
-                    except:
-                        pass
+    for i in range(start, end):
+        proxy = proxy_list[i]
+        if check_proxy(proxy):
+            # Perform additional checks on the proxy
+            success_count = 0
+            total_time = 0
+            test_count = 10
+            for j in range(test_count):
+                try:
+                    start_time = time.time()
+                    response = requests.get(url, proxies={"http": f"http://{proxy}", "https": f"https://{proxy}"}, timeout=5)
+                    end_time = time.time()
+                    total_time += end_time - start_time
+                    success_count += 1
+                except:
+                    pass
 
-                success_rate = success_count / test_count
-                avg_response_time = total_time / success_count if success_count > 0 else float("inf")
+            success_rate = success_count / test_count
+            avg_response_time = total_time / success_count if success_count > 0 else float("inf")
 
-                # Only keep proxies with a success rate >= 80% and average response time <= 1 second
-                if success_rate >= 0.8 and avg_response_time <= 1:
-                    checked_proxies.append(proxy)
+            # Print the success rate and average response time for each proxy
+            print(f"Proxy: {proxy}, Success rate: {success_rate}, Avg response time: {avg_response_time}")
 
-            checked_count += 1
-            sys.stdout.write(f"\rChecking proxies: {checked_count}/{proxy_count}")
-            sys.stdout.flush()
+            # Only keep proxies with a success rate >= 80% and average response time <= 1 second
+            if success_rate >= 0.8 and avg_response_time <= 1:
+                checked_proxies.append(proxy)
+
+        checked_count += 1
+        sys.stdout.write(f"\rChecking proxies: {checked_count}/{proxy_count}")
+        sys.stdout.flush()
+
 
     num_threads = 100
     chunk_size = proxy_count // num_threads
