@@ -155,6 +155,9 @@ def stress_test(thread_id, proxy_list):
         else:
             client = httpx.Client()
 
+    # Create a separate client without proxies for checking if the website is up or down
+    check_client = httpx.Client()
+
     start_time = time.time()
     last_print_time = start_time - 9
     if thread_id == 0:
@@ -179,7 +182,7 @@ def stress_test(thread_id, proxy_list):
                 if method == "cfb":
                     try:
                         response_start_time = time.time()
-                        response = client.get(url)
+                        response = check_client.get(url)
                         response_end_time = time.time()
                         response_time = round((response_end_time - response_start_time) * 1000, 2)
                         print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
@@ -188,7 +191,7 @@ def stress_test(thread_id, proxy_list):
                 elif method in ["get", "head"]:
                     try:
                         response_start_time = time.time()
-                        response = client.get(url) if method == "get" else client.head(url)
+                        response = check_client.get(url) if method == "get" else check_client.head(url)
                         response_end_time = time.time()
                         response_time = round((response_end_time - response_start_time) * 1000, 2)
                         print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
@@ -197,17 +200,6 @@ def stress_test(thread_id, proxy_list):
                 elif method in ["tcp", "udp"]:
                     print(f"Sent {packet_counter} packets to {ip}:{port}")
                 last_print_time = time.time()
-
-def send_request(client):
-    try:
-        if method == "cfb":
-            response = client.get(url)
-        elif method == "get":
-            response = client.get(url)
-        elif method == "head":
-            response = client.head(url)
-    except Exception as e:
-        pass
 
 def send_packet(client):
     try:
