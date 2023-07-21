@@ -1,4 +1,5 @@
 import asyncio
+import cloudscraper
 import httpx
 import socket
 import threading
@@ -35,7 +36,7 @@ async def stress_test(thread_id):
     if protocol == "cfb":
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
-        client = httpx.AsyncClient(limits=httpx.Limits(max_connections=num_threads))
+        client = httpx.AsyncClient()
     elif protocol in ["tcp", "udp"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     else:
@@ -63,7 +64,7 @@ async def stress_test(thread_id):
                 if protocol in ["get", "head", "cfb"]:
                     try:
                         response_start_time = time.time()
-                        response = await client.get(url)
+                        response = await httpx.AsyncClient().get(url)
                         response_end_time = time.time()
                         response_time = round((response_end_time - response_start_time) * 1000, 2)
                         print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
@@ -103,5 +104,6 @@ async def main():
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
+loop.close()
 
 print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
