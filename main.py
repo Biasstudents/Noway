@@ -30,9 +30,8 @@ duration = int(input("Enter the duration of the stress test in seconds: "))
 packet_size = 65507 if method == "udp" else 65535
 
 packet_counter = 0
-packet_counter_lock = asyncio.Lock()
 
-async def stress_test(thread_id):
+async def stress_test(thread_id, packet_counter_lock):
     global packet_counter
 
     async with httpx.AsyncClient() as client:
@@ -74,9 +73,12 @@ async def send_packet(client):
         pass
 
 async def main():
+    # Create the packet_counter_lock object inside the main function
+    packet_counter_lock = asyncio.Lock()
+
     tasks = []
     for i in range(num_threads):
-        task = asyncio.create_task(stress_test(i))
+        task = asyncio.create_task(stress_test(i, packet_counter_lock))
         tasks.append(task)
 
     await asyncio.gather(*tasks)
