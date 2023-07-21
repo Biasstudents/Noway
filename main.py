@@ -37,7 +37,7 @@ def stress_test(thread_id):
     if protocol == "cfb":
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
-        client = httpx.Client(http2=True, limits=httpx.Limits(max_connections=None, max_keepalive_connections=100))
+        client = httpx.Client()
     elif protocol in ["tcp", "udp"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     else:
