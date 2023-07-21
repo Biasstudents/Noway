@@ -93,6 +93,68 @@ def check_proxies():
     with open("proxies.txt", "w") as proxy_file:
         proxy_file.write("\n".join(checked_proxies))
 
+def check_proxies_advanced():
+    with open("proxies.txt") as proxy_file:
+        proxy_list = proxy_file.read().strip().split("\n")
+
+    print("Checking proxies...")
+    checked_proxies = []
+    proxy_count = len(proxy_list)
+    checked_count = 0
+
+    def check_proxy_thread(start, end):
+        nonlocal checked_proxies, checked_count
+
+        for i in range(start, end):
+            proxy = proxy_list[i]
+            if check_proxy(proxy):
+                # Perform additional checks on the proxy
+                success_count = 0
+                total_time = 0
+                test_count = 10
+                for j in range(test_count):
+                    try:
+                        start_time = time.time()
+                        response = requests.get(url, proxies={"http": f"http://{proxy}", "https": f"https://{proxy}"}, timeout=5)
+                        end_time = time.time()
+                        total_time += end_time - start_time
+                        success_count += 1
+                    except:
+                        pass
+
+                success_rate = success_count / test_count
+                avg_response_time = total_time / success_count if success_count > 0 else float("inf")
+
+                # Only keep proxies with a success rate >= 80% and average response time <= 1 second
+                if success_rate >= 0.8 and avg_response_time <= 1:
+                    checked_proxies.append(proxy)
+
+            checked_count += 1
+            sys.stdout.write(f"\rChecking proxies: {checked_count}/{proxy_count}")
+            sys.stdout.flush()
+
+    num_threads = 100
+    chunk_size = proxy_count // num_threads
+
+    threads = []
+    for i in range(num_threads):
+        start = i * chunk_size
+        end = start + chunk_size if i < num_threads - 1 else proxy_count
+
+        thread = threading.Thread(target=check_proxy_thread, args=(start, end))
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
+
+    working_proxies_count = len(checked_proxies)
+    non_working_proxies_count = proxy_count - working_proxies_count
+    print(f"\nProxies successfully checked. Working proxies: {working_proxies_count}/{proxy_count}. Non-working proxies: {non_working_proxies_count}/{proxy_count}")
+
+    with open("proxies.txt", "w") as proxy_file:
+        proxy_file.write("\n".join(checked_proxies))
+
 parser = argparse.ArgumentParser(description="Stress testing tool.")
 parser.add_argument("-method", choices=["get", "head", "cfb", "tcp", "udp"], help="Choose the method to use.")
 args, unknown_args = parser.parse_known_args()
@@ -103,6 +165,10 @@ if unknown_args and "-download" in unknown_args:
 
 if unknown_args and "-check" in unknown_args:
     check_proxies()
+    sys.exit()
+
+if unknown_args and "-check2" in unknown_args:
+    check_proxies_advanced()
     sys.exit()
 
 method = args.method
@@ -155,9 +221,6 @@ def stress_test(thread_id, proxy_list):
         else:
             client = httpx.Client()
 
-    # Create a separate client without proxies for checking if the website is up or down
-    check_client = httpx.Client()
-
     start_time = time.time()
     last_print_time = start_time - 9
     if thread_id == 0:
@@ -182,7 +245,7 @@ def stress_test(thread_id, proxy_list):
                 if method == "cfb":
                     try:
                         response_start_time = time.time()
-                        response = check_client.get(url)
+                        response = client.get(url)
                         response_end_time = time.time()
                         response_time = round((response_end_time - response_start_time) * 1000, 2)
                         print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
@@ -191,7 +254,7 @@ def stress_test(thread_id, proxy_list):
                 elif method in ["get", "head"]:
                     try:
                         response_start_time = time.time()
-                        response = check_client.get(url) if method == "get" else check_client.head(url)
+                        response = client.get(url) if method == "get" else client.head(url)
                         response_end_time = time.time()
                         response_time = round((response_end_time - response_start_time) * 1000, 2)
                         print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
@@ -200,6 +263,17 @@ def stress_test(thread_id, proxy_list):
                 elif method in ["tcp", "udp"]:
                     print(f"Sent {packet_counter} packets to {ip}:{port}")
                 last_print_time = time.time()
+
+def send_request(client):
+    try:
+        if method == "cfb":
+            response = client.get(url)
+        elif method == "get":
+            response = client.get(url)
+        elif method == "head":
+            response = client.head(url)
+    except Exception as e:
+        pass
 
 def send_packet(client):
     try:
