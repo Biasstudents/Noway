@@ -33,7 +33,7 @@ packet_counter_lock = threading.Lock()
 
 # Create a connection pool
 if protocol in ["get", "head"]:
-    client = httpx.Client(pool_limits=httpx.PoolLimits(soft_limit=num_threads, hard_limit=num_threads))
+    client = httpx.Client(limits=httpx.Limits(max_connections=num_threads, max_keepalive_connections=num_threads))
 elif protocol == "cfb":
     client = cloudscraper.create_scraper()
 
@@ -107,4 +107,3 @@ for thread in threads:
     thread.join()
 
 print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
-
