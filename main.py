@@ -42,7 +42,7 @@ def stress_test(thread_id):
 
     if protocol in ["tcp", "udp"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    else:
+    elif protocol not in ["get", "head", "cfb"]:
         print(Fore.RED + f"Invalid protocol: {protocol}" + Style.RESET_ALL)
         return
 
