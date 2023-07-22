@@ -1,6 +1,6 @@
+import aiohttp
 import asyncio
 import cloudscraper
-import httpx
 import socket
 import threading
 import time
@@ -20,10 +20,6 @@ elif protocol in ["tcp", "udp"]:
 
 num_threads = int(input("Enter the number of threads to use: "))
 
-# Set the max_keepalive_connections and max_connections based on the number of threads
-max_keepalive_connections = num_threads
-max_connections = num_threads * 10
-
 duration = int(input("Enter the duration of the stress test in seconds: "))
 
 if protocol == "udp":
@@ -40,9 +36,9 @@ async def stress_test_async(thread_id):
     if protocol == "cfb":
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
-        # Create an asynchronous connection pool with custom settings
-        limits = httpx.Limits(max_keepalive_connections=max_keepalive_connections, max_connections=max_connections)
-        client = httpx.AsyncClient(limits=limits)
+        # Create an aiohttp session with a connection pool
+        conn = aiohttp.TCPConnector(limit=num_threads)
+        client = aiohttp.ClientSession(connector=conn)
 
     start_time = time.time()
     last_print_time = start_time - 9
@@ -61,10 +57,10 @@ async def stress_test_async(thread_id):
                 if protocol in ["get", "head", "cfb"]:
                     try:
                         response_start_time = time.time()
-                        response = await httpx.get(url)
-                        response_end_time = time.time()
-                        response_time = round((response_end_time - response_start_time) * 1000, 2)
-                        print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
+                        async with aiohttp.request('GET', url) as response:
+                            response_end_time = time.time()
+                            response_time = round((response_end_time - response_start_time) * 1000, 2)
+                            print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
                     except Exception as e:
                         print(Fore.RED + f"Website is down." + Style.RESET_ALL)
                 last_print_time = time.time()
@@ -72,9 +68,11 @@ async def stress_test_async(thread_id):
 async def send_request_async(client):
     try:
         if protocol == "get":
-            response = await client.get(url)
+            async with client.get(url) as response:
+                pass
         elif protocol == "head":
-            response = await client.head(url)
+            async with client.head(url) as response:
+                pass
     except Exception as e:
         pass # Suppress error messages
 
