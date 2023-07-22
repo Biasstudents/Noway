@@ -1,24 +1,25 @@
+import asyncio
 import socket
-import threading
 
-server_ip = input("Enter server IP: ")
-server_port = int(input("Enter server port: "))
-num_threads = int(input("Enter number of threads: "))
+async def connect_to_server():
+    server_address = (185.107.193.2', 37513)  # Replace with your server IP and port
+    num_connections = 10000  # Number of connections to simulate
+    connection_timeout = 5  # Timeout for connecting to the server in seconds
 
-# Resolve domain name to numeric IP address
-try:
-    server_ip = socket.gethostbyname(server_ip)
-except:
-    pass
-
-def connect_to_server():
-    while True:
+    for _ in range(num_connections):
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((server_ip, server_port))
-        except:
-            pass
+            reader, writer = await asyncio.wait_for(
+                asyncio.open_connection(*server_address),
+                timeout=connection_timeout
+            )
+            print("Connected to the server successfully!")
+            writer.close()
+            await writer.wait_closed()
+        except (socket.gaierror, asyncio.TimeoutError):
+            print("Failed to connect to the server.")
 
-for i in range(num_threads):
-    t = threading.Thread(target=connect_to_server)
-    t.start()
+async def main():
+    await asyncio.gather(*[connect_to_server() for _ in range(100)])  # Simulate 10 threads making connections
+
+if __name__ == "__main__":
+    asyncio.run(main())
