@@ -2,7 +2,7 @@ import asyncio
 import socket
 
 async def connect_to_server():
-    server_address = ('185.107.193.2', 37513)  # Replace with your server IP and port
+    server_address = ('51.159.14.77', 60184)  # Replace with your server IP and port
     num_connections = 1000000  # Number of connections to simulate
     connection_timeout = 5  # Timeout for connecting to the server in seconds
 
