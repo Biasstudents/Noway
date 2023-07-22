@@ -3,7 +3,7 @@ import socket
 
 async def connect_to_server():
     server_address = ('185.107.193.2', 37513)  # Replace with your server IP and port
-    num_connections = 10000  # Number of connections to simulate
+    num_connections = 1000000  # Number of connections to simulate
     connection_timeout = 5  # Timeout for connecting to the server in seconds
 
     for _ in range(num_connections):
@@ -19,7 +19,7 @@ async def connect_to_server():
             print("Failed to connect to the server.")
 
 async def main():
-    await asyncio.gather(*[connect_to_server() for _ in range(100)])  # Simulate 10 threads making connections
+    await asyncio.gather(*[connect_to_server() for _ in range(1000)])  # Simulate 10 threads making connections
 
 if __name__ == "__main__":
     asyncio.run(main())
