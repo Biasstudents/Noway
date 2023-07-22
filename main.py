@@ -1,5 +1,5 @@
-import aiohttp
-import asyncio
+import cloudscraper
+import httpx
 import socket
 import threading
 import time
@@ -29,59 +29,59 @@ elif protocol == "tcp":
 packet_counter = 0
 packet_counter_lock = threading.Lock()
 
-async def send_request(session, url, protocol):
-    if protocol == 'get':
-        async with session.get(url) as response:
-            # Do something with the response
-            pass
-    elif protocol == 'head':
-        async with session.head(url) as response:
-            # Do something with the response
-            pass
-
-async def stress_test(thread_id):
+def stress_test(thread_id):
     global packet_counter
 
     if protocol == "cfb":
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
-        async with aiohttp.ClientSession() as session:
-            start_time = time.time()
-            last_print_time = start_time - 9
-            if thread_id == 0:
-                print(Fore.YELLOW + f"Stress testing started on {url} successfully!" + Style.RESET_ALL)
-            while time.time() - start_time < duration:
-                await send_request(session, url, protocol)
-                with packet_counter_lock:
-                    packet_counter += 1
-                if thread_id == 0 and time.time() - last_print_time >= 10:
-                    with packet_counter_lock:
-                        try:
-                            response_start_time = time.time()
-                            async with session.get(url) as response:
-                                response_end_time = time.time()
-                                response_time = round((response_end_time - response_start_time) * 1000, 2)
-                                print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
-                        except Exception as e:
-                            print(Fore.RED + f"Website is down." + Style.RESET_ALL)
-                    last_print_time = time.time()
+        limits = httpx.Limits(max_connections=num_connections, max_keepalive_connections=num_connections)
+        client = httpx.Client(http2=True, limits=limits)
     elif protocol in ["tcp", "udp"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        start_time = time.time()
-        last_print_time = start_time - 9
-        if thread_id == 0:
-            print(Fore.YELLOW + f"Stress testing started on {ip}:{port} successfully!" + Style.RESET_ALL)
-        while time.time() - start_time < duration:
-            send_packet(sock)
-            with packet_counter_lock:
-                packet_counter += 1
-            if thread_id == 0 and time.time() - last_print_time >= 10:
-                with packet_counter_lock:
-                    print(f"Sent {packet_counter} packets to {ip}:{port}")
-                last_print_time = time.time()
     else:
         print(Fore.RED + f"Invalid protocol: {protocol}" + Style.RESET_ALL)
         return
+
+    start_time = time.time()
+    last_print_time = start_time - 9
+    if thread_id == 0:
+        if protocol in ["get", "head", "cfb"]:
+            print(Fore.YELLOW + f"Stress testing started on {url} successfully!" + Style.RESET_ALL)
+        elif protocol in ["tcp", "udp"]:
+            print(Fore.YELLOW + f"Stress testing started on {ip}:{port} successfully!" + Style.RESET_ALL)
+    while time.time() - start_time < duration:
+        if protocol in ["get", "head", "cfb"]:
+            send_request(client)
+            with packet_counter_lock:
+                packet_counter += 1
+        elif protocol in ["tcp", "udp"]:
+            send_packet(sock)
+            with packet_counter_lock:
+                packet_counter += 1
+        if thread_id == 0 and time.time() - last_print_time >= 10:
+            with packet_counter_lock:
+                if protocol in ["get", "head", "cfb"]:
+                    try:
+                        response_start_time = time.time()
+                        response = httpx.get(url)
+                        response_end_time = time.time()
+                        response_time = round((response_end_time - response_start_time) * 1000, 2)
+                        print(Fore.GREEN + f"Website is up. Response time: {response_time} ms." + Style.RESET_ALL)
+                    except Exception as e:
+                        print(Fore.RED + f"Website is down." + Style.RESET_ALL)
+                elif protocol in ["tcp", "udp"]:
+                    print(f"Sent {packet_counter} packets to {ip}:{port}")
+                last_print_time = time.time()
+
+def send_request(client):
+    try:
+        if protocol == "get":
+            response = client.get(url)
+        elif protocol == "head":
+            response = client.head(url)
+    except Exception as e:
+        pass # Suppress error messages
 
 def send_packet(sock):
     try:
@@ -94,12 +94,13 @@ def send_packet(sock):
     except Exception as e:
         pass 
 
-tasks = []
+threads = []
 for i in range(num_threads):
-    task = asyncio.ensure_future(stress_test(i))
-    tasks.append(task)
+    thread = threading.Thread(target=stress_test, args=(i,))
+    thread.start()
+    threads.append(thread)
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(asyncio.wait(tasks))
+for thread in threads:
+    thread.join()
 
 print(Fore.YELLOW + "Stress test ended." + Style.RESET_ALL)
