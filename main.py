@@ -17,7 +17,7 @@ elif protocol in ["tcp", "udp"]:
     port = int(input("Enter the port number: "))
 
 num_threads = int(input("Enter the number of threads to use: "))
-
+num_connections = int(input("Enter the maximum number of connections to use: "))
 duration = int(input("Enter the duration of the stress test in seconds: "))
 
 if protocol == "udp":
@@ -34,7 +34,7 @@ def stress_test(thread_id):
     if protocol == "cfb":
         client = httpx.Client()
     elif protocol in ["get", "head"]:
-        client = httpx.Client()
+        client = httpx.Client(limits=httpx.Limits(max_connections=num_connections))
     elif protocol in ["tcp", "udp"]:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     else:
