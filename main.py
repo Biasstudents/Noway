@@ -20,9 +20,9 @@ elif protocol in ["tcp", "udp"]:
 
 num_threads = int(input("Enter the number of threads to use: "))
 
-# Set the soft_limit and hard_limit based on the number of threads
-soft_limit = num_threads
-hard_limit = num_threads * 10
+# Set the max_keepalive_connections and max_connections based on the number of threads
+max_keepalive_connections = num_threads
+max_connections = num_threads * 10
 
 duration = int(input("Enter the duration of the stress test in seconds: "))
 
@@ -41,8 +41,8 @@ async def stress_test_async(thread_id):
         client = cloudscraper.create_scraper()
     elif protocol in ["get", "head"]:
         # Create an asynchronous connection pool with custom settings
-        pool_limits = httpx.PoolLimits(soft_limit=soft_limit, hard_limit=hard_limit)
-        client = httpx.AsyncClient(pool_limits=pool_limits)
+        limits = httpx.Limits(max_keepalive_connections=max_keepalive_connections, max_connections=max_connections)
+        client = httpx.AsyncClient(limits=limits)
 
     start_time = time.time()
     last_print_time = start_time - 9
